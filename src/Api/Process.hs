@@ -11,20 +11,18 @@ import qualified Data.Map as M
 import Data.Map (Map)
 import Data.Aeson
 
-process :: Database -> APIRequest -> ByteString
+process :: Database -> [String] -> ByteString
 process db r =
-    processMethod (method r)
+    processMethod (head r)
   where
     processMethod "list" =
         encode $ verbList db
 
     processMethod "samples" =
-        case params r of
-            Just verbs -> encode $ loadSamples db verbs
-            _          -> "Skip required `params` field!"
+        encode $ loadSamples db (tail r)
 
     processMethod m =
-        encode $ "Unknown method `" ++ m ++ "`!"
+        encode ("Unknown method `" ++ concat r ++ "`!" :: String)
 
 loadSamples :: Database -> [String] -> [Map String [String]]
 loadSamples db =
