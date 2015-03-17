@@ -1,4 +1,4 @@
-module Util.LemmeParser (
+module Utils.LemmeParser (
     Lemme, Form, loadLemmes
 ) where
 

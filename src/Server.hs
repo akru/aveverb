@@ -2,19 +2,19 @@
 module Main where
 
 import Control.Monad (msum)
-import Happstack.Server (dir, nullConf, notFound, toResponse, simpleHTTP)
+import Happstack.Server (simpleHTTP, nullConf, dir)
 import Happstack.Server.FileServe
+import Database.MongoDB.Connection
 
+import Config (dbhost)
 import Index (index)
-import Api (api, loadDB)
+import Api (api)
 
 main :: IO ()
 main = do
-    putStrLn "Loading database..."
-    db <- loadDB "data/db.gz"
-    putStrLn "Done"
+    pipe <- connect dbhost
     simpleHTTP nullConf $ msum 
-        [ dir "api"    $ api db
+        [ dir "api"    $ api pipe
         , dir "static" $ serveDirectory DisableBrowsing [] "static"
         , index
         ]
