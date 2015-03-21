@@ -22,7 +22,7 @@ findSamples samples v = do
         ]
   where
     pattern :: [String] -> L.ByteString
-    pattern forms = L.fromString $ "(" ++ tail (concat (map (\a -> "| " ++ a ++ " ") forms)) ++ ")"
+    pattern forms = L.fromString $ "(" ++ tail (concat (map (\a -> "|[' ]" ++ a ++ "[\\.,;:!\\? ]") forms)) ++ ")"
 
 main :: IO ()
 main = do
