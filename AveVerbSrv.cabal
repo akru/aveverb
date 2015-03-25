@@ -1,5 +1,5 @@
 name:                AveVerb
-version:             0.2.0
+version:             0.2.1
 synopsis:            AveVerb server based on Happstack.
 license:             MIT
 license-file:        LICENSE
@@ -27,7 +27,7 @@ executable AveVerb
   ghc-options:         -threaded -rtsopts
 
 executable InitDB
-  main-is:             InitDB.hs
+  main-is:             Utils/InitDB.hs
   other-extensions:    OverloadedStrings
   build-depends:       base                 >= 4.6
                      , mongoDB              >= 2.0
@@ -37,7 +37,7 @@ executable InitDB
   hs-source-dirs:      src
 
 executable InsertDB
-  main-is:             InsertDB.hs
+  main-is:             Utils/InsertDB.hs
   other-extensions:    OverloadedStrings
   build-depends:       base                 >= 4.6
                      , mongoDB              >= 2.0

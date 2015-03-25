@@ -22,30 +22,26 @@ api pipe = uriRest $ \uri ->
     toReq = splitOn "/" . tail
     runDB = access pipe ReadStaleOk dbname
 
+    selectWith :: Val v => Query -> Label -> IO [v]
+    selectWith q l = do
+        r <- runDB (rest =<< find q)
+        mapM (lookup l) r
+
     processMethod ("list" : _) = do
-        let verbNames = (select [] verb_c) { project = ["name" =: 1] }
-        r <- runDB $ rest =<< find verbNames
-        l <- mapM (lookup "name") r
-        return $ encode (l :: [String])
+        names <- selectWith (select [] verb_c) "name"
+        return $ encode (names :: [String])
 
     processMethod ("rule" : verb : _) = do
-        let verbRules = (select ["name" =: verb] verb_c) { project = ["rule" =: 1] }
-        r <- runDB $ rest =<< find verbRules
-        rule <- lookup "rule" (head r)
-        return $ encode (rule :: String)
+        rules <- selectWith (select ["name" =: verb] verb_c) "rule"
+        return $ encode (head rules :: String)
     
     processMethod ("forms" : verb : _) = do
-        let verbForms = (select ["name" =: verb] verb_c) { project = ["forms" =: 1] }
-        r <- runDB $ rest =<< find verbForms
-        s <- lookup "forms" (head r)
-        return $ encode (s :: [String])
+        forms <- selectWith (select ["name" =: verb] verb_c) "forms"
+        return $ encode (head forms :: [String])
 
     processMethod ("samples" : verb : _) = do
-        let samples = (select ["verb" =: verb] samp_c) { project = ["samples" =: 1] }
-        r <- runDB $ rest =<< find samples
-        s <- lookup "samples" (head r)
-        return $ encode (s :: [String])
+        samples <- selectWith (select ["verb" =: verb] samp_c) "samples"
+        return $ encode (samples :: [String])
 
-    processMethod m
-        = error $ "Unknown request `" ++ show m ++ "`!"
+    processMethod _ = error $ "Unknown request!"
 

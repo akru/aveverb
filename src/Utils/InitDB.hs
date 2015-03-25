@@ -5,9 +5,9 @@ import Config
 import Utils.LemmeParser
 
 import qualified Data.Map as M
-import System.Environment
+import System.Environment (getArgs)
+import Data.Maybe (fromMaybe)
 import Database.MongoDB
-import Data.Maybe
 
 main :: IO ()
 main = do
