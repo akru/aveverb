@@ -4,8 +4,7 @@ module Config where
 import Database.MongoDB
 
 dbname :: Database
---dbname = "aveverb"
-dbname = "aveverb_test"
+dbname = "aveverb"
 
 dbhost :: Host
 dbhost = host "127.0.0.1"

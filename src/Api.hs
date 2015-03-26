@@ -41,7 +41,7 @@ api pipe = uriRest $ \uri ->
 
     processMethod ("samples" : verb : _) = do
         samples <- selectWith (select ["verb" =: verb] samp_c) "samples"
-        return $ encode (samples :: [String])
+        return $ encode (head samples :: [String])
 
     processMethod _ = error $ "Unknown request!"
 
