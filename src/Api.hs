@@ -4,44 +4,52 @@ module Api (api) where
 import Config
 
 import Prelude hiding (lookup)
-import Happstack.Server (ServerPart, Response, toResponse, badRequest, ok)
-import Happstack.Server.Routing (uriRest)
 import Control.Monad.IO.Class (liftIO)
-import Data.List.Split (splitOn)
+import Data.ByteString.UTF8 (toString, ByteString)
 import Data.Aeson (encode)
 import Database.MongoDB
+import Data.Map ((!))
+import Snap.Core
 
-api :: Pipe -> ServerPart Response
-api pipe = uriRest $ \uri ->
-    case uri of
-        [] -> badRequest $ toResponse "Too few arguments"
-        _  -> do
-            res <- liftIO $ processMethod (toReq uri)
-            ok $ toResponse res
+data REST = REST ByteString Params
+  deriving Show
+
+selectWith :: Val v => Query -> Label -> Snap [v]
+selectWith q l = liftIO $ do
+    pipe <- connect dbhost
+    let runDB = access pipe ReadStaleOk dbname
+    r <- runDB (rest =<< find q {project = [l =: 1]})
+    mapM (lookup l) r
+
+api :: Snap ()
+api = do
+    r <- getRequest
+    process $ REST (rqPathInfo r) (rqQueryParams r)
   where
-    toReq = splitOn "/" . tail
-    runDB = access pipe ReadStaleOk dbname
+    process (REST "list" args) = do
+        let listName = argOne (args ! "name")
+            allVerbs = selectWith (select [] verb_c) "name"
+        names <- case listName of
+            "all"     -> allVerbs
+            "popular" -> allVerbs
+            _         -> allVerbs
+        writeLBS $ encode (names :: [String])
 
-    selectWith :: Val v => Query -> Label -> IO [v]
-    selectWith q l = do
-        r <- runDB (rest =<< find q)
-        mapM (lookup l) r
-
-    processMethod ("list" : _) = do
-        names <- selectWith (select [] verb_c) "name"
-        return $ encode (names :: [String])
-
-    processMethod ("rule" : verb : _) = do
-        rules <- selectWith (select ["name" =: verb] verb_c) "rule"
-        return $ encode (head rules :: String)
+    process (REST "rule" args) = do
+        let verb = argOne (args ! "verb")
+            ruleByVerb = select ["name" =: verb] verb_c
+        rules <- selectWith ruleByVerb "rule"
+        writeLBS $ encode (head rules :: String)
     
-    processMethod ("forms" : verb : _) = do
-        forms <- selectWith (select ["name" =: verb] verb_c) "forms"
-        return $ encode (head forms :: [String])
+    process (REST "samples" args) = do
+        let verb = argOne (args ! "verb")
+            page = read $ argOne $ args ! "page"
+            cnt  = read $ argOne $ args ! "count"
+            samplesByVerb = (select ["verb" =: verb] samp_c)
+        samples <- selectWith samplesByVerb "samples"
+        let paginated = take cnt . drop (page * cnt) . head
+        writeLBS $ encode (paginated samples :: [String])
 
-    processMethod ("samples" : verb : _) = do
-        samples <- selectWith (select ["verb" =: verb] samp_c) "samples"
-        return $ encode (head samples :: [String])
-
-    processMethod _ = error $ "Unknown request!"
+    process _ = error $ "Unknown request method!"
+    argOne = toString . head
 
