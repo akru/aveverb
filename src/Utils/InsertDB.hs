@@ -21,32 +21,35 @@ pattern forms =
     mid a b c = a ++ c ++ b
     front = "|[' ]"
     back  = "[\\.,;:!\\? ]"
-    patternString = tail (concat (map (mid front back) forms))
+    patternString = tail $ concat $ fmap (mid front back) forms
 
 findSamples samples v = do
-    verb <- lookup "name" v
+    verb  <- lookup "name" v
     forms <- lookup "forms" v
-    trace (show verb) (return ())
+    --trace (show verb) (return ())
     return $
         [ "verb"    =: verb
-        , "samples" =: map L.toString (filterAndHL (verb : forms) samples)
+        , "samples" =: filterAndHL (verb : forms) samples
         ]
   where
     filterAndHL forms samples =
-        catMaybes $ map (sampleHL forms) samples
+        catMaybes $ fmap (sampleFilter forms) samples
 
-    sampleHL forms sample =
+    sampleFilter :: [String] -> String -> Maybe String
+    sampleFilter forms sample =
         if sample =~ pattern forms
-            then let (a, b, c) = sample =~ pattern forms in
-                     Just (foldl1 L.append [a, "<b>", b, "</b>", c])
+            then Just $ highlight $ sample =~ pattern forms 
             else Nothing
+
+    highlight :: (String, String, String) -> String
+    highlight (a, b, c) = concat [a, "<b>", b, "</b>", c]
 
 main :: IO ()
 main = do
     pipe <- connect dbhost
     args <- getArgs
-    f <- L.readFile (head args)
-    let samples = L.lines f
+    f <- readFile (head args)
+    let samples = lines f
         runDB   = access pipe master dbname
     verbs <- runDB $ rest =<< find (select [] verb_c)
 
